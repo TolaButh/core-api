@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  member-api:
+    build:
+      context: ./
+      dockerfile: Dockerfile-Member
+      target: production
+    container_name: member-api
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - worker
+      - rabbitmq
+    environment:
+      - VIRTUAL_HOST=secure.metasocial24hr.com
+    networks:
+      - nat
+
+  worker:
+    build:
+      context: ./
+      dockerfile: Dockerfile-Worker
+      target: production
+    container_name: worker
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+    networks:
+      - nat
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    env_file:
+      - .env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - nat
+
+  member:
+    image: m1sternt/pumkub-member:latest
+    container_name: member
+    networks:
+      - nat
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - PURCHASECODE=86788d54-50d7-4380-abed-10dbc28aca72
+      - DB_DATABASE=metashop
+      - DB_HOST=35.187.250.61
+      - DB_PASSWORD=0835897600Za*
+      - DB_USERNAME=metashop
+
+  nginx_service:
+    image: jwilder/nginx-proxy
+    container_name: nginx_service
+    networks:
+      - nat
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./config/ssl:/etc/nginx/ssl
+    depends_on:
+      - member-api
+      - member
+
+volumes:
+  rabbitmq_data:
+
+
+networks:
+  nat:

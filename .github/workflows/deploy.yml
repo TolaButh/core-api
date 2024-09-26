@@ -1,0 +1,70 @@
+name: Release API
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare Variables
+        id: vars
+        run: |
+          TAG=$(echo $GITHUB_SHA | head -c7)
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "member_tagged=m1sternt/pumkub-member-api:${TAG}" >> $GITHUB_OUTPUT
+          echo "worker_tagged=m1sternt/pumkub-worker-api:${TAG}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Member
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          file: Dockerfile-Member
+          tags: ${{ steps.vars.outputs.member_tagged }},m1sternt/pumkub-member-api:latest
+
+      - name: Build and push Worker
+        uses: docker/build-push-action@v3
+        with:
+          push: true
+          file: Dockerfile-Worker
+          tags: ${{ steps.vars.outputs.worker_tagged }},m1sternt/pumkub-worker-api:latest
+
+      - name: Check out k8s repo
+        uses: actions/checkout@v4
+        with:
+          repository: metasocial24hr/k8s
+          path: k8s
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Update Image Version in deployment
+        uses: fjogeleit/yaml-update-action@main
+        with:
+          changes: |
+            {
+              "deployment/api/member/deploy.yaml": {
+                ".spec.template.spec.containers[0].image": "${{ steps.vars.outputs.member_tagged }}"
+              },
+              "deployment/api/worker/deploy.yaml": {
+                ".spec.template.spec.containers[0].image": "${{ steps.vars.outputs.worker_tagged }}"
+              }
+            }
+          branch: main
+          targetBranch: main
+          createPR: false
+          commitChange: true
+          message: ':rocket:[DEV]Update Core API Version to ${{ steps.vars.outputs.tag }}'
+          workDir: k8s
+          repository: metasocial24hr/k8s
+          token: ${{ secrets.GH_PAT }}

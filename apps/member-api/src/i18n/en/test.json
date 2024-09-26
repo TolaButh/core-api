@@ -1,0 +1,10 @@
+{
+  "USE_DATA_UPDATE":"You have successfully received the gift",
+  "LOGIN_FAIL":"Invalid login information",
+  "LOGIN_SUCCESS":"Login successful",
+  "CHANGE_PASSWORD":"Password changed successfully",
+  "TRANSFER_CREDIT":"The exchange to credits is successful",
+  "ORDER_TRANSACTION":"Insufficient balance. Please deposit and try again",
+  "ORDER_SUCCESS":"Successfully placed your order",
+  "RECIEVCE_SUCCESS":"You have successfully received the coupon"
+}
