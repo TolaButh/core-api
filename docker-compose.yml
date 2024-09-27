@@ -15,7 +15,7 @@ services:
       - worker
       - rabbitmq
     environment:
-      - VIRTUAL_HOST=secure.metasocial24hr.com
+      - VIRTUAL_HOST=
     networks:
       - nat
 
